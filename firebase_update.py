@@ -5,6 +5,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import configparser
 import pandas as pd
+import w3storage
 
 class Firebase_update():
     def __init__(self):
@@ -16,19 +17,23 @@ class Firebase_update():
     def upload_files_to_storage(self, uid="D6zAcainsELrBohRwmiV", batch_id="wtS192Jk9bo8lIavn6Vv"):
         bucket = storage.bucket()
         local_directory_path = '/cert-issuer/data/blockchain_certificates/'+batch_id
+        
+        json_files = [f for f in os.listdir(local_directory_path) if f.endswith('.json')]
 
-        for file_name in os.listdir(local_directory_path):
-            local_file_path = os.path.join(local_directory_path, file_name)
+        for i in range(len(json_files)):
+            local_file_path = os.path.join(local_directory_path, json_files[i])
             print(local_file_path)
             with open(local_file_path, 'r') as f:
                 data = json.load(f)
             
-            value = data['credentialSubject']['name']
-            print("value:", value)
-            print("check 2")
-            destination_blob_name = uid+'/'+batch_id+'/signed_certificates/'+value+".json"
+            name = data['credentialSubject']['name']
+            print("name:", name)
+            new_file_path = os.path.join(local_directory_path, name+'.json')
+            os.rename(local_file_path, new_file_path)
+            
+            destination_blob_name = uid+'/'+batch_id+'/signed_certificates/'+name+".json"
             blob = bucket.blob(destination_blob_name) # Blob object for the file 
-            with open(local_file_path, 'rb') as json_file:
+            with open(new_file_path, 'rb') as json_file:
                 blob.upload_from_file(json_file, content_type='application/json')
 
     def get_issuer_info(self, uid="D6zAcainsELrBohRwmiV"):
@@ -101,3 +106,22 @@ class Firebase_update():
         for student in student_docs:
             df = df.append(student.to_dict(), ignore_index=True)
             df.to_csv('./data/rosters/roster_testnet.csv', index=False)
+
+    def update_cid(self, uid="D6zAcainsELrBohRwmiV", batch_id="wtS192Jk9bo8lIavn6Vv"):
+        my_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweEMwQUZmQzllMEZERWY3NjU0YTM1Y2FmMUU2OUMxNGRFNzM2MzYyREMiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2ODAwOTkwMTgyNjUsIm5hbWUiOiJ0cnVzdGljYXRlIn0.B-hxjB8BnwBzIbIxjhy416QhWuqUMJzAPpO0cVUnQTE"
+
+        w3 = w3storage.API(token=my_token)
+
+        some_uploads = w3.user_uploads(size=25)
+        dir_path = '/cert-issuer/data/blockchain_certificates/'+batch_id
+        print(dir_path)
+        for file_name in os.listdir(dir_path):
+            local_file_path = os.path.join(dir_path, file_name)
+            cid = w3.post_upload((file_name, open(local_file_path, 'rb')))
+        doc_ref = self.db.collection('schools').document(uid).collection('issuance').document(batch_id).collection('students').where('name','==', file_name[:-5]).limit(1).get()
+        # doc_ref = self.db.collection('schools').document(uid).collection('issuance').document(batch_id).collection('students').where('name','==', 'Julie Park').limit(1).get()
+        print("doc", doc_ref)
+        doc_ref.update({'ipfs': cid+".ipfs.w3s.link/"})
+        print(cid)
+
+

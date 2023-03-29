@@ -5,6 +5,7 @@ from flask_cors import CORS
 from subprocess import call
 import os 
 import firebase_update
+import w3storage
 
 # from .firebase_update import firebase_update
 
@@ -46,8 +47,8 @@ def issue_batch():
     batch_id = data['batch_id']
 
     # Update the conf file
-    fb.update_conf_certtools()
-    fb.update_roster()
+    # fb.update_conf_certtools()
+    # fb.update_roster()
 
     try:
         os.system('python3 cert-tools/cert_tools/create_v3_certificate_template.py -c ./conf_v2.ini')
@@ -58,19 +59,30 @@ def issue_batch():
     except Exception as e: 
         return jsonify({'code':500, 'message': e})
     
-    # Issue unsigned certificates
-    try:
-        os.system('python3 -m cert_issuer -c ./conf.ini')
-    except Exception as e: 
-        return jsonify({'code':500, 'message': e})
+    # # Issue unsigned certificates
+    # try:
+    #     os.system('python3 -m cert_issuer -c ./conf.ini')
+    # except Exception as e: 
+    #     return jsonify({'code':500, 'message': e})
     
     # Upload signed ceritifcates to Firebase Storage
     try:
         fb.upload_files_to_storage(uid="D6zAcainsELrBohRwmiV")
     except Exception as e: 
         return jsonify({'code':500, 'message': e})
-    
     return jsonify({'code':200})
+
+@app.route('/trusticate/generate_ipfs', methods=['GET'])
+def generate_ipfs():
+    data = request.get_json()
+    uid = data['uid']
+    batch_id = data['batch_id']
+    
+
+    fb.update_cid(uid, batch_id)
+    # return jsonify({'ipfs_links': cid})
+    return jsonify({'code': 200})
+
 
 @app.route('/test2', methods=['GET'])
 def test2():
