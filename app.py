@@ -59,10 +59,10 @@ def issue_batch():
         return jsonify({'code':500, 'message': e})
     
     # Issue unsigned certificates
-    # try:
-    #     os.system('python3 -m cert_issuer -c ./conf.ini')
-    # except Exception as e: 
-    #     return jsonify({'code':500, 'message': e})
+    try:
+        os.system('python3 -m cert_issuer -c ./conf.ini')
+    except Exception as e: 
+        return jsonify({'code':500, 'message': e})
     
     # Upload signed ceritifcates to Firebase Storage
     try:

@@ -1,4 +1,6 @@
 import os 
+import shutil
+import json
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import configparser
@@ -10,15 +12,21 @@ class Firebase_update():
         self.admin = firebase_admin.initialize_app(self.cred, {'storageBucket' : 'trusticate-a346c.appspot.com'})
         self.db = firestore.client()
 
+    
     def upload_files_to_storage(self, uid="D6zAcainsELrBohRwmiV", batch_id="wtS192Jk9bo8lIavn6Vv"):
-        # batch_name = batch_id
         bucket = storage.bucket()
-        print(batch_id, type(batch_id))
         local_directory_path = '/cert-issuer/data/blockchain_certificates/'+batch_id
 
         for file_name in os.listdir(local_directory_path):
             local_file_path = os.path.join(local_directory_path, file_name)
-            destination_blob_name = uid+'/'+batch_id+'/signed_certificates/'+file_name
+            print(local_file_path)
+            with open(local_file_path, 'r') as f:
+                data = json.load(f)
+            
+            value = data['credentialSubject']['name']
+            print("value:", value)
+            print("check 2")
+            destination_blob_name = uid+'/'+batch_id+'/signed_certificates/'+value+".json"
             blob = bucket.blob(destination_blob_name) # Blob object for the file 
             with open(local_file_path, 'rb') as json_file:
                 blob.upload_from_file(json_file, content_type='application/json')
@@ -34,6 +42,7 @@ class Firebase_update():
         # For cert-tools
         config = configparser.ConfigParser()
         conf_file_path = './conf_v2.ini'
+        
         try:
             config.read(conf_file_path)
         except configparser.ParsingError as e:
@@ -45,20 +54,41 @@ class Firebase_update():
         config.set('IssuerInformation', 'issuer_public_key', issuer_data['publicKey'])
         config.set('IssuerInformation', 'revocation_list', issuer_data['revocationList'])
         config.set('IssuerInformation', 'issuer_id', issuer_data['issuerJSONURL'])
-
+        # config.set('BatchConfig', 'unsigned_certificates_dir', "unsigned_certificates/"+batch_id)
+        
         with open(conf_file_path, 'w') as configfile:
             config.write(configfile)
-
+        
+        # Remove the directory if exists
+        # unsigned_dir_path = '/cert-issuer/data/unsigned_certificates/'+batch_id
+        # if os.path.exists(unsigned_dir_path):
+        #     shutil.rmtree(unsigned_dir_path)
+        
         # For cert-issuer
+        self.update_conf_certissuer(issuer_data, uid, batch_id)
+        
+    def update_conf_certissuer(self, issuer_data, uid, batch_id):
+        
+        config = configparser.ConfigParser()
         conf_file_path = './conf.ini'
         try:
             config.read(conf_file_path)
         except configparser.ParsingError as e:
             print("ParsingError", e)
-    
+
         config.set('IssuerInformation', 'issuing_address', issuer_data['publicKey'])
         signed_certificates_dir = 'data/blockchain_certificates/'+batch_id
+        # unsigned_certificates_dir = 'data/unsigned_certificates/'+batch_id
+        # config.set('DataDir', 'unsigned_certificates_dir', unsigned_certificates_dir)
         config.set('DataDir', 'blockchain_certificates_dir', signed_certificates_dir)
+
+        with open(conf_file_path, 'w') as configfile:
+            config.write(configfile)
+        
+        # Remove the directory if exists
+        # signed_dir_path = '/cert-issuer/data/blockchain_certificates/'+batch_id
+        # if os.path.exists(signed_dir_path):
+        #     shutil.rmtree(signed_dir_path)
     
     def update_roster(self, uid="D6zAcainsELrBohRwmiV", batch_id="wtS192Jk9bo8lIavn6Vv"):
         # school_doc = self.db.collection('schools').where('uid', '==', uid).limit(1).get()
