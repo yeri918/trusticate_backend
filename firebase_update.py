@@ -114,14 +114,16 @@ class Firebase_update():
 
         some_uploads = w3.user_uploads(size=25)
         dir_path = '/cert-issuer/data/blockchain_certificates/'+batch_id
-        print(dir_path)
+
         for file_name in os.listdir(dir_path):
             local_file_path = os.path.join(dir_path, file_name)
-            cid = w3.post_upload((file_name, open(local_file_path, 'rb')))
-        doc_ref = self.db.collection('schools').document(uid).collection('issuance').document(batch_id).collection('students').where('name','==', file_name[:-5]).limit(1).get()
-        # doc_ref = self.db.collection('schools').document(uid).collection('issuance').document(batch_id).collection('students').where('name','==', 'Julie Park').limit(1).get()
-        print("doc", doc_ref)
-        doc_ref.update({'ipfs': cid+".ipfs.w3s.link/"})
-        print(cid)
+            
+            doc_snapshot = self.db.collection('schools').document(uid).collection('issuance').document(batch_id).collection('students').where('name','==', file_name[:-5]).get()
+            if doc_snapshot != []:
+                cid = w3.post_upload((file_name, open(local_file_path, 'rb')))
+                doc_ref = doc_snapshot[0].reference
+                doc_ref.update({ 'ipfs':'https://{}.ipfs.w3s.link/'.format(cid) })
+            else:
+                continue
 
 
