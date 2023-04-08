@@ -37,8 +37,8 @@ class Firebase_update():
                 blob.upload_from_file(json_file, content_type='application/json')
 
     def get_issuer_info(self, uid="D6zAcainsELrBohRwmiV"):
-        school_doc = self.db.collection('schools').where('uid', '==', uid).limit(1).get()
-        data = school_doc[0].to_dict()
+        school_doc = self.db.collection('schools').document(uid).get()
+        data = school_doc.to_dict()
         return data
 
     def update_conf_certtools(self, uid="PpXTkHhD2vMG9C7NwqH9ljyHCa13", batch_id="wtS192Jk9bo8lIavn6Vv"):
@@ -125,5 +125,9 @@ class Firebase_update():
                 doc_ref.update({ 'ipfs':'https://{}.ipfs.w3s.link/'.format(cid) })
             else:
                 continue
+
+    def update_issuance_status(self, uid, batch_id):
+        doc_ref = self.db.collection('schools').document(uid).collection('issuance').document(batch_id)
+        doc_ref.update({'status':True})
 
 

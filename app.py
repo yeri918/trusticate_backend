@@ -47,7 +47,7 @@ def issue_batch():
     batch_id = data['batch_id']
 
     # Update the conf file
-    fb.update_conf_certtools()
+    fb.update_conf_certtools(uid, batch_id)
     fb.update_roster()
 
     # try:
@@ -60,26 +60,30 @@ def issue_batch():
     #     return jsonify({'code':500, 'message': e})
     
     # # Issue unsigned certificates
-    try:
-        os.system('python3 -m cert_issuer -c ./conf.ini')
-    except Exception as e: 
-        return jsonify({'code':500, 'message': e})
+    # try:
+    #     os.system('python3 -m cert_issuer -c ./conf.ini')
+    # except Exception as e: 
+    #     return jsonify({'code':500, 'message': e})
     
     # Upload signed ceritifcates to Firebase Storage
     try:
         fb.upload_files_to_storage(uid, batch_id)
+        fb.update_issuance_status(uid, batch_id)
     except Exception as e: 
+        return jsonify({'code':500, 'message': e})
+    try:
+        fb.update_cid(uid, batch_id)
+    except Exception as e:
         return jsonify({'code':500, 'message': e})
     return jsonify({'code':200})
 
-@app.route('/trusticate/generate_ipfs', methods=['GET'])
-def generate_ipfs():
+@app.route('/trusticate/testing', methods=['GET'])
+def testing():
     data = request.get_json()
     uid = data['uid']
     batch_id = data['batch_id']
     
-
-    fb.update_cid(uid, batch_id)
+    fb.update_issuance_status(uid, batch_id)
     # return jsonify({'ipfs_links': cid})
     return jsonify({'code': 200})
 
