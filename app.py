@@ -40,30 +40,30 @@ def generate_revocation():
         return jsonify({'code':500, 'message': e})
     return send_file('/cert-issuer/data/revocation-list.json', as_attachment=True)
 
-@app.route('/trusticate/issue_batch', methods=['GET'])
+@app.route('/trusticate/issue_batch', methods=['POST'])
 def issue_batch():
     data = request.get_json()
     uid = data['uid']
     batch_id = data['batch_id']
-
+    print(uid, batch_id)
     # Update the conf file
     fb.update_conf_certtools(uid, batch_id)
-    fb.update_roster()
+    fb.update_roster(uid, batch_id)
 
-    # try:
-    #     os.system('python3 cert-tools/cert_tools/create_v3_certificate_template.py -c ./conf_v2.ini')
-    # except Exception as e:
-    #     return jsonify({'code':500, 'message': e})
-    # try:
-    #     os.system('python3 cert-tools/cert_tools/instantiate_v3_certificate_batch.py -c ./conf_v2.ini')
-    # except Exception as e: 
-    #     return jsonify({'code':500, 'message': e})
+    try:
+        os.system('python3 cert-tools/cert_tools/create_v3_certificate_template.py -c ./conf_v2.ini')
+    except Exception as e:
+        return jsonify({'code':500, 'message': e})
+    try:
+        os.system('python3 cert-tools/cert_tools/instantiate_v3_certificate_batch.py -c ./conf_v2.ini')
+    except Exception as e: 
+        return jsonify({'code':500, 'message': e})
     
     # # Issue unsigned certificates
-    # try:
-    #     os.system('python3 -m cert_issuer -c ./conf.ini')
-    # except Exception as e: 
-    #     return jsonify({'code':500, 'message': e})
+    try:
+        os.system('python3 -m cert_issuer -c ./conf.ini')
+    except Exception as e: 
+        return jsonify({'code':500, 'message': e})
     
     # Upload signed ceritifcates to Firebase Storage
     try:

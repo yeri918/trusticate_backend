@@ -96,16 +96,14 @@ class Firebase_update():
         #     shutil.rmtree(signed_dir_path)
     
     def update_roster(self, uid="D6zAcainsELrBohRwmiV", batch_id="wtS192Jk9bo8lIavn6Vv"):
-        # school_doc = self.db.collection('schools').where('uid', '==', uid).limit(1).get()
-        # print(school_doc[0].id)
-        # issuance_doc = self.db.collection('schools').document(school_doc[0].id).collection('issuance').where('batch_id','==', batch_id).limit(1).get()
-        # print(issuance_doc[0].id)
         student_docs = self.db.collection('schools').document(uid).collection('issuance').document(batch_id).collection('students').get()
         df = pd.DataFrame(columns=['name', 'identity', 'publicKey', 'hasCredential', 'educationalCredentialAwarded'])
-
+        print(student_docs)
         for student in student_docs:
             df = df.append(student.to_dict(), ignore_index=True)
-            df.to_csv('./data/rosters/roster_testnet.csv', index=False)
+        
+        print(df.head())
+        df.to_csv('./data/rosters/roster_testnet.csv', index=False)
 
     def update_cid(self, uid="D6zAcainsELrBohRwmiV", batch_id="wtS192Jk9bo8lIavn6Vv"):
         my_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweEMwQUZmQzllMEZERWY3NjU0YTM1Y2FmMUU2OUMxNGRFNzM2MzYyREMiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2ODAwOTkwMTgyNjUsIm5hbWUiOiJ0cnVzdGljYXRlIn0.B-hxjB8BnwBzIbIxjhy416QhWuqUMJzAPpO0cVUnQTE"
